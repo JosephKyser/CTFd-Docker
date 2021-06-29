@@ -1,3 +1,6 @@
+# change log
+	Make compatible with the latest version of CTFd and docker
+
 # CTFd-Docker
 Plugin to give CTFd the ability to manage Docker containers
 
