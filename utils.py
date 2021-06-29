@@ -1,4 +1,6 @@
-from CTFd.utils import admins_only, is_admin, cache
+from CTFd.utils import cache
+from CTFd.utils.decorators import admins_only
+from CTFd.utils.user import is_admin
 from CTFd.models import db
 from .models import Containers
 
@@ -6,6 +8,10 @@ import json
 import subprocess
 import socket
 import tempfile
+import shutil
+import logging
+import re
+logger = logging.getLogger(__name__)
 
 
 @cache.memoize()
@@ -31,12 +37,15 @@ def import_image(name):
 
 def create_image(name, buildfile, files):
     if not can_create_container():
+        print('can_create_container faile')
         return False
     folder = tempfile.mkdtemp(prefix='ctfd')
-    tmpfile = tempfile.NamedTemporaryFile(dir=folder, delete=False)
+    tmpfile = tempfile.NamedTemporaryFile(dir=folder, mode='w', delete=False)
+    logger.error(tmpfile)
     tmpfile.write(buildfile)
     tmpfile.close()
 
+    # 改为接收zip包
     for f in files:
         if f.filename.strip():
             filename = os.path.basename(f.filename)
@@ -51,7 +60,7 @@ def create_image(name, buildfile, files):
         db.session.add(container)
         db.session.commit()
         db.session.close()
-        rmdir(folder)
+        # shutil.rmtree(folder)
         return True
     except subprocess.CalledProcessError:
         return False
@@ -85,7 +94,7 @@ def run_image(name):
         except KeyError:
             ports_asked = []
 
-        cmd = ['docker', 'run', '-d']
+        cmd = ['docker', 'run', '-itd']
         ports_used = []
         for port in ports_asked:
             if is_port_free(port):
@@ -105,6 +114,7 @@ def run_image(name):
 def container_start(name):
     try:
         cmd = ['docker', 'start', name]
+        print(cmd)
         subprocess.call(cmd)
         return True
     except subprocess.CalledProcessError:
@@ -114,6 +124,7 @@ def container_start(name):
 def container_stop(name):
     try:
         cmd = ['docker', 'stop', name]
+        print(cmd)
         subprocess.call(cmd)
         return True
     except subprocess.CalledProcessError:
@@ -133,13 +144,16 @@ def container_status(name):
 def container_ports(name, verbose=False):
     try:
         info = json.loads(subprocess.check_output(['docker', 'inspect', '--type=container', name]))
+        print(name, info)
         if verbose:
             ports = info[0]["NetworkSettings"]["Ports"]
             if not ports:
                 return []
             final = []
+            print(ports)
             for port in ports.keys():
-                final.append("".join([ports[port][0]["HostPort"], '->', port]))
+                if ports[port] is not None and ports[port][0] is not None and ports[port][0]["HostPort"] is not None:
+                    final.append("".join([ports[port][0]["HostPort"], '->', port]))
             return final
         else:
             ports = info[0]['Config']['ExposedPorts'].keys()

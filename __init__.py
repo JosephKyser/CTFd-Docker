@@ -1,12 +1,14 @@
 from flask import current_app as app, render_template, request, redirect, jsonify, url_for, Blueprint
-from CTFd.utils import admins_only, is_admin, cache
+from CTFd.utils import cache
+from CTFd.utils.decorators import admins_only
+from CTFd.utils.user import is_admin
 from CTFd.models import db
 from .models import Containers
 
 from . import utils
 
 def load(app):
-    app.db.create_all()
+    # app.db.create_all()
     admin_containers = Blueprint('admin_containers', __name__, template_folder='templates')
 
 
@@ -16,6 +18,7 @@ def load(app):
         containers = Containers.query.all()
         for c in containers:
             c.status = utils.container_status(c.name)
+            # we need not ports because we will proxy with nginx or kong
             c.ports = ', '.join(utils.container_ports(c.name, verbose=True))
         return render_template('containers.html', containers=containers)
 
@@ -61,8 +64,12 @@ def load(app):
     @admins_only
     def new_container():
         name = request.form.get('name')
+        print(set(name), set('abcdefghijklmnopqrstuvwxyz0123456789-_'), set(name) <= set('abcdefghijklmnopqrstuvwxyz0123456789-_'))
         if not set(name) <= set('abcdefghijklmnopqrstuvwxyz0123456789-_'):
             return redirect(url_for('admin_containers.list_container'))
+        container = Containers.query.filter_by(name=name).first()
+        if container:
+            return redirect(url_for('admin_containers.list_container', error='名称已存在'))
         buildfile = request.form.get('buildfile')
         files = request.files.getlist('files[]')
         utils.create_image(name=name, buildfile=buildfile, files=files)
@@ -75,8 +82,10 @@ def load(app):
     def import_container():
         name = request.form.get('name')
         if not set(name) <= set('abcdefghijklmnopqrstuvwxyz0123456789-_'):
+            return redirect(url_for('admin_containers.list_container', error='镜像名称不正确'))
+        if utils.import_image(name=name):
             return redirect(url_for('admin_containers.list_container'))
-        utils.import_image(name=name)
-        return redirect(url_for('admin_containers.list_container'))
+        else:
+            return redirect(url_for('admin_containers.list_container', error='镜像名称不正确'))
 
     app.register_blueprint(admin_containers)

@@ -1,5 +1,22 @@
 {% extends "admin/base.html" %}
-
+{% block stylesheets %}
+<style>
+ #teamsboard{
+	 width: 90%;
+	 margin: 0 auto;
+ }	
+ .fa{
+	 padding: 0 10px;
+ }
+ #teamsboard i{
+	cursor: pointer;
+ }
+ #error{
+	 text-align: center;
+	 color: red;
+ }
+</style>
+{% endblock %}
 {% block content %}
 <div class="modal fade" id="create-container-modal" tabindex="-1" role="dialog" aria-labelledby="container-modal-label">
 	<div class="modal-dialog" role="document">
@@ -13,7 +30,7 @@
 				<div class="modal-body">
 						<div class="form-group">
 							<label for="name">Name</label>
-							<input type="text" class="form-control" name="name" placeholder="Enter container name">
+							<input type="text" class="form-control" name="name" placeholder="仅支持小写字母、数字及-_">
 						</div>
 						<div class="form-group">
 							<label for="buildfile-editor" class="control-label">Build File</label>
@@ -71,11 +88,11 @@
 				<div class="row-fluid">
 					<div class="col-md-12">
 						<form method="POST">
-							<input id="nonce" type="hidden" name="nonce" value="{{ nonce }}">
+							<input class="nonce" type="hidden" name="nonce" value="{{ nonce }}">
 							<div class="small-6 small-centered text-center columns">
 								<p>Are you sure you want to <span id="confirm-container-method"></span> <strong id="confirm-container-name"></strong>?</p>
 								<button type="button" data-dismiss="modal" class="btn btn-theme btn-outlined">No</button>
-								<button type="button" id="confirm-container" class="btn btn-theme btn-outlined">Yes</button>
+								<button type="submit" id="confirm-container" class="btn btn-theme btn-outlined">Yes</button>
 							</div>
 						</form>
 					</div>
@@ -86,7 +103,7 @@
 </div>
 
 
-<div class="row">
+<div class="column">
 	<br>
 	<div style="text-align:center">
 		<h1>Containers</h1>
@@ -98,6 +115,9 @@
 		</button>
 	</div>
 	<br>
+	<p style="text-align: center;">
+		<span id="error"></span>
+	</p>
 {% if containers %}
 	<table id="teamsboard">
 		<thead>
@@ -138,52 +158,60 @@
 
 {% block scripts %}
 <script>
-
-function load_confirm_modal(title, url, container_name){
-	var modal = $('#confirm')
-	modal.find('#confirm-container-name').text(container_name)
-	modal.find('#confirm-container-title').text(title)
-	modal.find('#confirm-container-method').text(title.toLowerCase())
-	$('#confirm form').attr('action', url);
-	$('#confirm').modal('show');
-}
-
-$('#confirm-container').click(function(e){
-	e.preventDefault();
-	var id = $('#confirm input[name="id"]').val()
-	var user_data = $('#confirm form').serializeArray()
-	$.post($('#confirm form').attr('action'), $('#confirm form').serialize(), function(data){
-		var data = $.parseJSON(JSON.stringify(data))
-		if (data == "1"){
-			location.reload()
-		}
-	})
-});
-
-
-$('.fa-times').click(function(){
-	var elem = $(this).parent().parent().parent().find('.container_item');
-	var container = elem.attr('id');
-	var container_name = elem.text().trim();
-	load_confirm_modal('Delete', '/admin/containers/'+container+'/delete', container_name)
-});
-
-$('.fa-play').click(function(){
-	var elem = $(this).parent().parent().parent().find('.container_item');
-	var container = elem.attr('id');
-	var container_name = elem.text().trim();
-	load_confirm_modal('Start', '/admin/containers/'+container+'/start', container_name)
-});
-
-$('.fa-stop').click(function(){
-	var elem = $(this).parent().parent().parent().find('.container_item');
-	var container = elem.attr('id');
-	var container_name = elem.text().trim();
-	load_confirm_modal('Stop', '/admin/containers/'+container+'/stop', container_name)
-});
-
+console.log(init)
+// document.getElementById('nonce').value = init.csrfNonce
 $(document).ready(function(){
+	var urlParams = new URLSearchParams(window.location.search);
+	if(urlParams.has('error')){
+		document.getElementById('error').innerText = urlParams.get('error')
+	}
+
+	$("input[name=nonce]").val(init.csrfNonce)
+	console.log('document is ready')
 	$('[data-toggle="tooltip"]').tooltip();
+	function load_confirm_modal(title, url, container_name){
+		var modal = $('#confirm')
+		modal.find('#confirm-container-name').text(container_name)
+		modal.find('#confirm-container-title').text(title)
+		modal.find('#confirm-container-method').text(title.toLowerCase())
+		$('#confirm form').attr('action', url);
+		$('#confirm').modal('show');
+	}
+
+	$('#confirm-container').click(function(e){
+		e.preventDefault();
+		var id = $('#confirm input[name="id"]').val()
+		var user_data = $('#confirm form').serializeArray()
+		$.post($('#confirm form').attr('action'), $('#confirm form').serialize(), function(data){
+			var data = $.parseJSON(JSON.stringify(data))
+			if (data == "1"){
+				location.reload()
+			}
+		})
+	});
+
+
+	$('.fa-times').click(function(){
+		var elem = $(this).parent().parent().parent().find('.container_item');
+		var container = elem.attr('id');
+		var container_name = elem.text().trim();
+		load_confirm_modal('Delete', '/admin/containers/'+container+'/delete', container_name)
+	});
+
+	$('.fa-play').click(function(){
+		var elem = $(this).parent().parent().parent().find('.container_item');
+		var container = elem.attr('id');
+		var container_name = elem.text().trim();
+		load_confirm_modal('Start', '/admin/containers/'+container+'/start', container_name)
+	});
+
+	$('.fa-stop').click(function(){
+		var elem = $(this).parent().parent().parent().find('.container_item');
+		var container = elem.attr('id');
+		var container_name = elem.text().trim();
+		load_confirm_modal('Stop', '/admin/containers/'+container+'/stop', container_name)
+	});
+
 });
 
 </script>
