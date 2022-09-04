@@ -34,7 +34,7 @@
 						</div>
 						<div class="form-group">
 							<label for="buildfile-editor" class="control-label">Build File</label>
-							<textarea id="buildfile-editor" class="form-control" name="buildfile" rows="10" placeholder="Enter container build file"></textarea>
+							<input type="file" name="buildfile" id="buildfile-editor">
 						</div>
 						<div class="form-group">
 							<label for="container-files">Associated Files
@@ -159,7 +159,7 @@
 {% block scripts %}
 <script>
 console.log(init)
-// document.getElementById('nonce').value = init.csrfNonce
+document.getElementById('nonce').value = init.csrfNonce
 $(document).ready(function(){
 	var urlParams = new URLSearchParams(window.location.search);
 	if(urlParams.has('error')){

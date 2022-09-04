@@ -11,6 +11,8 @@ import tempfile
 import shutil
 import logging
 import re
+import sys
+import os
 logger = logging.getLogger(__name__)
 
 
@@ -36,16 +38,18 @@ def import_image(name):
 
 
 def create_image(name, buildfile, files):
+    print(f"{buildfile}", file=sys.stderr)
     if not can_create_container():
-        print('can_create_container faile')
+        print('can_create_container failed')
         return False
     folder = tempfile.mkdtemp(prefix='ctfd')
     tmpfile = tempfile.NamedTemporaryFile(dir=folder, mode='w', delete=False)
     logger.error(tmpfile)
-    tmpfile.write(buildfile)
+
+    
+    tmpfile.write(buildfile.read().decode())
     tmpfile.close()
 
-    # 改为接收zip包
     for f in files:
         if f.filename.strip():
             filename = os.path.basename(f.filename)
