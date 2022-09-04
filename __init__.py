@@ -70,10 +70,8 @@ def load(app):
         container = Containers.query.filter_by(name=name).first()
         if container:
             return redirect(url_for('admin_containers.list_container', error='名称已存在'))
-        # buildfile = request.form.get('buildfile')
-        buildfile = request.files['buildfile']
         files = request.files.getlist('files[]')
-        utils.create_image(name=name, buildfile=buildfile, files=files)
+        utils.create_image(name=name, files=files)
         utils.run_image(name)
         return redirect(url_for('admin_containers.list_container'))
 

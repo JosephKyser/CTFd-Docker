@@ -37,27 +37,23 @@ def import_image(name):
         return False
 
 
-def create_image(name, buildfile, files):
-    print(f"{buildfile}", file=sys.stderr)
+def create_image(name, files):
     if not can_create_container():
         print('can_create_container failed')
         return False
     folder = tempfile.mkdtemp(prefix='ctfd')
-    tmpfile = tempfile.NamedTemporaryFile(dir=folder, mode='w', delete=False)
-    logger.error(tmpfile)
-
-    
-    tmpfile.write(buildfile.read().decode())
-    tmpfile.close()
 
     for f in files:
         if f.filename.strip():
             filename = os.path.basename(f.filename)
             f.save(os.path.join(folder, filename))
+            if f.filename == "Dockerfile":
+                buildfile = os.path.join(folder, filename)
+        print(f, file=sys.stderr)
     # repository name component must match "[a-z0-9](?:-*[a-z0-9])*(?:[._][a-z0-9](?:-*[a-z0-9])*)*"
     # docker build -f tmpfile.name -t name
     try:
-        cmd = ['docker', 'build', '-f', tmpfile.name, '-t', name, folder]
+        cmd = ['docker', 'build', '-f', buildfile, '-t', name, folder]
         print(cmd)
         subprocess.call(cmd)
         container = Containers(name, buildfile)
